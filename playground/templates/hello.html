@@ -1,0 +1,16 @@
+<html>
+    <body>
+
+        {% if name %}
+        <h1>hello {{name}}</h1>
+        {% else %}
+        <h1>hello world</h1>
+        {% endif %}
+        <ul>
+            {% for product in products %}
+                <li>{{ product }}    </li>
+            {% endfor %}
+        </ul>
+
+    </body>
+</html>
