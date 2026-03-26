@@ -1,8 +1,12 @@
+# from validators import validate
+
 from django.db import models
 from django.contrib import admin
 from django.conf import settings
 from uuid import uuid4
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, FileExtensionValidator
+
+from store.validators import validate
 class Promotion(models.Model):
     description = models.CharField(max_length=255)
     discount = models.FloatField()
@@ -26,6 +30,11 @@ class Product(models.Model):
     collection = models.ForeignKey(Collection, on_delete=models.PROTECT)
     promotions = models.ManyToManyField(Promotion)
 
+
+class ProductImage(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to='store/images/',validators=[validate])
+    # image = models.FileField(upload_to='store/images/',validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png','pdf']), validate])
 
 class Customer(models.Model):
     MEMBERSHIP_BRONZE = 'B'

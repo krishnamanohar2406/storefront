@@ -1,7 +1,7 @@
 from store.models import Product
 from django.contrib import admin
 from django.contrib.contenttypes.admin import GenericTabularInline
-from store.admin import ProductAdmin
+from store.admin import ProductAdmin, ProductImageInLine
 from tags.models import TaggedItem
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import User
@@ -21,14 +21,14 @@ class UserAdmin(BaseUserAdmin):
         ),
     )
 
-# class TagInline(GenericTabularInline):
-#     autocomplete_fields = ['tag']
-#     model = TaggedItem
+class TagInline(GenericTabularInline):
+    autocomplete_fields = ['tag']
+    model = TaggedItem
 
 
-# class CustomProductAdmin(ProductAdmin):
-#     inlines = [TagInline]
+class CustomProductAdmin(ProductAdmin):
+    inlines = [TagInline,ProductImageInLine]
 
 
-# admin.site.unregister(Product)
-# admin.site.register(Product, CustomProductAdmin)
+admin.site.unregister(Product)
+admin.site.register(Product, CustomProductAdmin)

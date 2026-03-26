@@ -16,6 +16,8 @@ router.register('orders',views.OrderViewSet, basename='order')
 productRouter= NestedSimpleRouter(router,"products",lookup="product")
 productRouter.register('reviews', views.ReviewSet,basename='product-reviews')
 
+productRouter.register('images', views.ProductImageViewSet, basename='product-images')
+
 cartRouter = NestedSimpleRouter(router,"carts",lookup="cart")
 cartRouter.register('items', views.CartItemViewSet, basename='cart-items') 
 # # pprint(router.urls)
