@@ -5,234 +5,140 @@ from rest_framework import status
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet,GenericViewSet
-from rest_framework.mixins import ListModelMixin, CreateModelMixin
+from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin
+from rest_framework.decorators import action
 # from rest_framework.pagination import PageNumberPagination
-from rest_framework.response import Response  
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter,OrderingFilter
 
-from .filters import ProductFilter
-from .pagination import DefaultPagination
-from .models import Cart, CartItem, Product,Collection,OrderItem, Reviews
-from django.db.models import Count
+from rest_framework.response import Response
 
-from .serializers import CartItemSerializer, CartSerializer, ProductSerializer , collectionSerializer,ReviewSerialzer, AddCartItemSerializer,UpdateCartItemSerializer
-# Create your views here.
+from rest_framework.permissions import IsAdminUser,IsAuthenticated
 
-# -----------------1-----------------1------------------1--------------
-# @api_view(['GET'])
-# def product_list(request):
-#     query_set = Product.objects.select_related('collection').all()
-#     ser = ProductSerializer(query_set, many=True, context={'request': request})
-#     return Response(ser.data)
+from store.filters import ProductFilter
+from store.models import Cart, CartItem, Customer, Order, Product,Collection, ProductImage, Review
+from store.pagination import DefaultPagination
+from store.serializers import AddCartItemSerializer, CartItemSerializer, CartSerializer, CollectionSerializer, CreateOrderSerializer, CustomerSerializer, OrderItemSerializer, OrderSerializer, ProductImageSerializer, ProductSerializer ,ReviewSerializer, UpdateCartItemSerializer, UpdateOrderSerializer
 
-# @api_view(['GET'])
-# def product_detail(request,id):
+class CustomerViewSet(ModelViewSet):
+    queryset=Customer.objects.all()
+    serializer_class=CustomerSerializer
+    permission_classes=[IsAdminUser]
 
-#     product = get_object_or_404(Product, id=id)
-#     ser = ProductSerializer(product)
-#     return Response(ser.data)
-#     # try:
-#     #     # product = Product.objects.filter(id=id).values('id', 'title', 'unit_price').first()
-#     #     product = Product.objects.get(id=id)
-#     #     ser = ProductSerializer(product)
-#     #     return Response(ser.data)
-#     # except Product.DoesNotExist:
-#     #     return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)         
-#     # return Response(f"Product detail view for product id  {id} ")
+    @action(detail=False,methods=['GET','PUT'],url_path='me',permission_classes=[IsAuthenticated])
+    def me(self,request):
+        customer=Customer.objects.get(user_id=request.user.id)
+        if request.method == 'GET':
+            serializer=CustomerSerializer(customer)
+            return Response(serializer.data)
+        elif request.method=='PUT':
+            serializer=CustomerSerializer(customer, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
+        
 
-
-
-# # ----------------2----------------2----------------------2---
-# class ProductList(APIView):
-#     def get(self,request):
-#         query_set = Product.objects.select_related('collection').all()
-#         ser = ProductSerializer(query_set, many=True, context={'request': request})
-#         return Response(ser.data)
-#     def post(self,request):
-#         serializer = ProductSerializer(data=request.data)
-         
-#         serializer.is_valid(raise_exception=True)
-#         serializer.save()
-#         return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
 
 
 
-# 3--------------3----------------------3----------------------3---
-# class ProductList(ListCreateAPIView):
-#     def get_queryset(self):
-#         # return super().get_queryset()
-#         return Product.objects.select_related('collection').all()
-#     def get_serializer_class(self):
-#         return ProductSerializer
 
-#     def get_serializer_context(self):
-#         return {'request': self.request}
-
-
-# class ProductDetail(RetrieveUpdateDestroyAPIView):
-#     queryset = Product.objects.all()
-#     serializer_class = ProductSerializer
-#     def delete(self,request,id):
-#         product = get_object_or_404(Product, id=id)
-#         product.delete()
-#         return Response(status=status.HTTP_204_NO_CONTENT)
-    
-
-
-# # ------------4---------------4-------------------------------4
-class ProductViewSet(ModelViewSet):#combination of product list and product detail
-    # queryset = Product.objects.all()
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]#used to filter based on foreign key without requiring to implement get_gueryset manually
-    # filterset_fields = ['collection_id','unit_price']
-
+class ProductViewSet(ModelViewSet):
+    queryset=Product.objects.select_related('collection').all()
+    serializer_class=ProductSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ProductFilter
     search_fields = ['title', 'description']
     ordering_fields = ['unit_price', 'last_update']
 
-    # pagination_class = PageNumberPagination
-    # page_size= 10
     pagination_class=DefaultPagination
-
-    # def get_queryset(self):
-    #     query_set=Product.objects.all()
-    #     collection_id=self.request.query_params.get('collection_id')
-    #     if collection_id is not None:
-    #         query_set=query_set.filter(collection_id=collection_id)
-    #     return query_set
+    http_method_names=['get','post','put','patch','delete']
+    def get_permissions(self):
+        if self.request.method in ['POST','PUT','PATCH','DELETE']:
+            return [IsAdminUser()]
+        return []
 
     def get_serializer_context(self):
         return {'request': self.request}
-
-    # def delete(self,request,id):
-    #     product = get_object_or_404(Product, id=id)
-    #     product.delete()
-    #     return Response(status=status.HTTP_204_NO_CONTENT)
-
-    # def destroy(self, request, *args, **kwargs):
-    #     if OrderItem.objects.filter(product_id=kwargs['pk']).count()>0:
-    #         return Response({'error':'Product cannot be deleted because it is having orders count>0'})
-    #     return super().destroy(request, *args, **kwargs)
-
-
-
-
-# class ProductDetail(APIView):
-#     def get(self,request,id):
-#         product = get_object_or_404(Product, id=id)
-#         ser = ProductSerializer(product)
-#         return Response(ser.data)
     
-#     def put(self,request,id):
-#         product = get_object_or_404(Product, id=id)
-#         serializer = ProductSerializer(product, data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         serializer.save()
-#         return Response(serializer.data)
-    
-#     def delete(self,request,id):
-#         product = get_object_or_404(Product, id=id)
-#         product.delete()
-#         return Response(status=status.HTTP_204_NO_CONTENT)
-    
-
-
-
-
-#
-#---------------------Collection-Views--------------------------------
-#
-
-# ----------------------1----------1-------------1-----------------------
-# @api_view(['GET','POST'])
-# def collection_list(request):
-#     if request.method=='GET':
-#         collection=Collection.objects.annotate(products_count=Count('product')).all()
-#         # print(collection)
-#         ser=collectionSerializer(collection,many=True)
-#         return Response(ser.data)
-#         # return Response(f"Collection detail view for collection id  {id} ")
-#     elif request.method=='POST':
-#         serializer = collectionSerializer(data=request.data)
-         
-#         serializer.is_valid(raise_exception=True)
-#         serializer.save()
-#         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
-# @api_view(['GET', 'PUT', 'DELETE'])
-# def collection_detail(request,pk):
-#     collection=get_object_or_404(Collection.objects.annotate(products_count=Count('product')), pk=pk)
-#     if request.method=='GET':
-#         # collection = get_object_or_404(Collection, pk=id)
-#         ser = collectionSerializer(collection)
-#         return Response(ser.data)
-#     elif request.method=='PUT':
-#         # collection = get_object_or_404(Collection, pk=id)
-#         serializer = collectionSerializer(collection, data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         serializer.save()
-#         return Response(serializer.data)
-#     elif request.method=='DELETE':
-#         if collection.product_set.count()>0:
-#             return Response({'error':'Collection cannot be deleted because it includes one or more products.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-#         collection.delete()
-
-
-# ------------------------2--------------------2-----------------2-------
-# class CollectionList(ListCreateAPIView):
-#     def get_queryset(self):
-#         return Collection.objects.annotate(products_count=Count('product')).all()
-#     def get_serializer_class(self):
-#         return collectionSerializer
-    
-# ------------------------3---------------------------3-------------3----
-# class CollectionViewSet(ReadOnlyModelViewSet): ------> for only read operations not able to delete orupdate
-
-
 class CollectionViewSet(ModelViewSet):
-    queryset = Collection.objects.all()
-    serializer_class = collectionSerializer
+    queryset=Collection.objects.all()
+    serializer_class=CollectionSerializer
+    http_method_names=['get','post','put','patch','delete']
+    def get_permissions(self):
+        if self.request.method in ['POST','PUT','PATCH','DELETE']:
+            return [IsAdminUser()]
+        return [IsAuthenticated()]
     def get_serializer_context(self):
         return {'request': self.request}
+
+
+
+class ProductImageViewSet(ModelViewSet):
+    serializer_class=ProductImageSerializer
+    http_method_names=['get','post','put','patch','delete']
+    def get_permissions(self):
+        if self.request.method in ['POST','PUT','PATCH','DELETE']:
+            return [IsAdminUser()]
+        return [IsAuthenticated()]
+    def get_serializer_context(self):
+        return {'product_id':self.kwargs['product_pk']}
+    
+    def get_queryset(self):
+        return ProductImage.objects.filter(product_id=self.kwargs['product_pk'])
     
 
-    # def delete(self,request,pk):
-    #     collection = get_object_or_404(Collection, pk=pk)
-    #     if collection.product_set.count()>0:
-    #         return Response({'error':'Collection cannot be deleted because it includes one or more products.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-    #     collection.delete()
-    #     return Response(status=status.HTTP_204_NO_CONTENT)
-    # error below code
-    # def destory(self,request,*args, **kwargs):
-    #     if Product.objects.filter(collection_id=kwargs['pk']).count()>0:
-    #         return Response({'error':'collection cannot be deleted because it is containing products in that collection'})
-    #     return super().destroy(request, *args, **kwargs)
-    def destroy(self, request, *args, **kwargs):
-        if Product.objects.filter(collection_id=kwargs['pk']).count()>0:
-            return Response({'error':'collection cannot be deleted because it is having product count>0'})
-        return super().destroy(request, *args, **kwargs)
     
+
+
 
 class ReviewSet(ModelViewSet):
-    serializer_class=ReviewSerialzer
-    def get_queryset(self):
-        return Reviews.objects.filter(product_id=self.kwargs['product_pk'])
+    serializer_class=ReviewSerializer
 
     def get_serializer_context(self):
-        return {'product_id': self.kwargs['product_pk']}
+        return {'product_id':self.kwargs['product_pk'],'user_id': self.request.user.id}
+    
+    def get_queryset(self):
+        return Review.objects.filter(product_id=self.kwargs['product_pk'])
     
 
 
-class CartViewSet(CreateModelMixin, GenericViewSet, ListModelMixin,RetrieveUpdateDestroyAPIView):
-    queryset=Cart.objects.prefetch_related('items__product').all()
+class CartViewSet(ModelViewSet):
     serializer_class=CartSerializer
+
+    http_method_names=['get','post','patch','delete']
+    def get_permissions(self):
+        if self.request.method in ['PATCH','DELETE']:
+            return [IsAdminUser()]
+        return [IsAuthenticated()]
+    
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return Cart.objects.all()
+        
+        
+        return Cart.objects.filter(customer_id =self.request.user.id).prefetch_related('items__product').all()
+    
+    def get_serializer_context(self):
+        cxt= super().get_serializer_context()
+        cxt['user_id']= self.request.user.id
+        return cxt
+    
+    @action(detail=True, methods=['POST'], url_path='checkout', permission_classes=[IsAuthenticated])
+    def checkout(self, request, pk=None):
+        cart_id = self.kwargs.get('pk') or pk
+        serializer = CreateOrderSerializer(
+            data={'cart_id': cart_id},
+            context={'user_id': request.user.id, 'cart_id': cart_id},
+        )
+        serializer.is_valid(raise_exception=True)
+        order = serializer.save()
+        return Response(OrderSerializer(order).data)
+
 
 
 class CartItemViewSet(ModelViewSet):
-    # serializer_class=CartItemSerializer
-    http_method_names=['get','post','patch','delete']#explicitly mention allowed http methods
+    http_method_names=['get','post','patch','delete']
     def get_serializer_class(self):
         if self.request.method=="POST":
             return AddCartItemSerializer
@@ -241,7 +147,103 @@ class CartItemViewSet(ModelViewSet):
         return CartItemSerializer
 
     def get_queryset(self):
-        return CartItem.objects.filter(cart_id=self.kwargs['cart_pk'])\
-        .select_related('product')
+        return CartItem.objects.filter(cart_id=self.kwargs['cart_pk'])
     def get_serializer_context(self):
         return {'cart_id': self.kwargs['cart_pk']}
+
+    
+
+class OrderViewSet(ModelViewSet):
+    http_method_names=['get','post','patch','delete']
+    def get_permissions(self):
+        if self.request.method in ['PATCH','DELETE']:
+            return [IsAdminUser()]
+        return [IsAuthenticated()]
+
+    
+
+
+    def get_serializer_class(self):
+        if self.request.method=='POST':
+            return CreateOrderSerializer
+        elif self.request.method=='PATCH':
+            return UpdateOrderSerializer
+        return OrderSerializer
+
+    def get_serializer_context(self):
+        return {'user_id': self.request.user.id}
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return Order.objects.all()
+        customer_id = Customer.objects.only('id').get(user_id=self.request.user.id).id
+        return Order.objects.filter(customer_id=customer_id)
+        
+    
+    @action(detail=True, methods=['POST'], url_path='makepayment')
+    def make_payment(self, request, pk=None):
+        order = self.get_object()  # 404s automatically if this order isn't the requesting user's
+ 
+        if order.payment_status == Order.PAYMENT_STATUS_COMPLETE:
+            return Response({'detail': 'This order has already been paid for.'}, status=status.HTTP_400_BAD_REQUEST)
+ 
+        total = sum(
+            (item.quantity * item.product.unit_price for item in order.items.select_related('product').all()),
+            Decimal('0.00')
+        )
+        if total <= 0:
+            return Response({'detail': 'This order has no items to pay for.'}, status=status.HTTP_400_BAD_REQUEST)
+ 
+        try:
+            razorpay_order = get_razorpay_client().order.create({
+                'amount': int(total * 100),  # Razorpay expects paise, not rupees
+                'currency': 'INR',
+                'payment_capture': 1,
+                'notes': {'order_id': str(order.id)},
+            })
+        except Exception as e:
+            return Response({'detail': f'Could not initiate payment: {e}'}, status=status.HTTP_502_BAD_GATEWAY)
+ 
+        # Overwriting here is what makes retries work: a customer whose first
+        # payment attempt failed or expired can call this again for a fresh attempt.
+        order.razorpay_order_id = razorpay_order['id']
+        order.save()
+ 
+        return Response({
+            'order_id': order.id,
+            'razorpay_order_id': order.razorpay_order_id,
+            'razorpay_key_id': settings.RAZORPAY_KEY_ID,  # safe to expose, it's the publishable key
+            'amount': razorpay_order['amount'],
+            'currency': razorpay_order['currency'],
+        })
+ 
+    @action(detail=True, methods=['POST'], url_path='verify-payment')
+    def verify_payment(self, request, pk=None):
+        order = self.get_object()  # 404s automatically if this order isn't the requesting user's
+
+        razorpay_order_id = request.data.get('razorpay_order_id')
+        razorpay_payment_id = request.data.get('razorpay_payment_id')
+        razorpay_signature = request.data.get('razorpay_signature')
+
+        if not all([razorpay_order_id, razorpay_payment_id, razorpay_signature]):
+            return Response(
+                {'detail': 'razorpay_order_id, razorpay_payment_id and razorpay_signature are all required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            get_razorpay_client().utility.verify_payment_signature({
+                'razorpay_order_id': razorpay_order_id,
+                'razorpay_payment_id': razorpay_payment_id,
+                'razorpay_signature': razorpay_signature,
+            })
+        except razorpay.errors.SignatureVerificationError:
+            order.payment_status = Order.PAYMENT_STATUS_FAILED
+            order.save()
+            return Response({'detail': 'Payment verification failed.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        order.payment_status = Order.PAYMENT_STATUS_COMPLETE
+        order.razorpay_payment_id = razorpay_payment_id
+        order.save()
+        return Response(OrderSerializer(order).data)
+        
