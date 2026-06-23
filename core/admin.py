@@ -1,16 +1,12 @@
-from store.models import Product
 from django.contrib import admin
-from django.contrib.contenttypes.admin import GenericTabularInline
-from store.admin import ProductAdmin, ProductImageInLine
-from tags.models import TaggedItem
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import User
-from django.db import models
 
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+
+# Register your models here.
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    # email = models.EmailField(unique=True)
     add_fieldsets = (
         (
             None,
@@ -20,15 +16,3 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
     )
-
-class TagInline(GenericTabularInline):
-    autocomplete_fields = ['tag']
-    model = TaggedItem
-
-
-class CustomProductAdmin(ProductAdmin):
-    inlines = [TagInline,ProductImageInLine]
-
-
-admin.site.unregister(Product)
-admin.site.register(Product, CustomProductAdmin)
