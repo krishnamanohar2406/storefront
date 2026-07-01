@@ -18,7 +18,13 @@ from rest_framework.permissions import IsAdminUser,IsAuthenticated
 from store.filters import ProductFilter
 from store.models import Cart, CartItem, Customer, Order, Product,Collection, ProductImage, Review
 from store.pagination import DefaultPagination
-from store.serializers import AddCartItemSerializer, CartItemSerializer, CartSerializer, CollectionSerializer, CreateOrderSerializer, CustomerSerializer, OrderItemSerializer, OrderSerializer, ProductImageSerializer, ProductSerializer ,ReviewSerializer, UpdateCartItemSerializer, UpdateOrderSerializer
+from store.serializers import AddCartItemSerializer, CartItemSerializer, CartSerializer, CollectionSerializer, CreateOrderSerializer, CustomerSerializer, OrderItemSerializer, OrderSerializer, ProductImageSerializer, ProductSerializer ,ReviewSerializer, UpdateCartItemSerializer, UpdateOrderSerializer,RazorpayVerificationSerializer,EmptySerializer
+
+from decimal import Decimal
+from django.conf import settings
+import razorpay
+from store.payments import get_razorpay_client  # <--- CRITICAL FIX
+
 
 class CustomerViewSet(ModelViewSet):
     queryset=Customer.objects.all()
@@ -154,19 +160,23 @@ class CartItemViewSet(ModelViewSet):
     
 
 class OrderViewSet(ModelViewSet):
-    http_method_names=['get','post','patch','delete']
+    http_method_names = ['get', 'post', 'patch', 'delete']
+    
     def get_permissions(self):
-        if self.request.method in ['PATCH','DELETE']:
+        if self.request.method in ['PATCH', 'DELETE']:
             return [IsAdminUser()]
         return [IsAuthenticated()]
-
     
-
-
     def get_serializer_class(self):
-        if self.request.method=='POST':
+        # Bind the specialized structures to your actions to fix the Django REST page layout!
+        if self.action == 'make_payment':
+            return EmptySerializer
+        elif self.action == 'verify_payment':
+            return RazorpayVerificationSerializer
+            
+        if self.request.method == 'POST':
             return CreateOrderSerializer
-        elif self.request.method=='PATCH':
+        elif self.request.method == 'PATCH':
             return UpdateOrderSerializer
         return OrderSerializer
 
@@ -179,63 +189,67 @@ class OrderViewSet(ModelViewSet):
         customer_id = Customer.objects.only('id').get(user_id=self.request.user.id).id
         return Order.objects.filter(customer_id=customer_id)
         
-    
-    @action(detail=True, methods=['POST'], url_path='makepayment')
+    @action(detail=True, methods=['POST'], url_path='makepayment', permission_classes=[IsAuthenticated])
     def make_payment(self, request, pk=None):
-        order = self.get_object()  # 404s automatically if this order isn't the requesting user's
- 
+        order = self.get_object()
+
         if order.payment_status == Order.PAYMENT_STATUS_COMPLETE:
             return Response({'detail': 'This order has already been paid for.'}, status=status.HTTP_400_BAD_REQUEST)
- 
+
         total = sum(
             (item.quantity * item.product.unit_price for item in order.items.select_related('product').all()),
             Decimal('0.00')
         )
         if total <= 0:
             return Response({'detail': 'This order has no items to pay for.'}, status=status.HTTP_400_BAD_REQUEST)
- 
+        
+        if order.razorpay_order_id and order.payment_status == Order.PAYMENT_STATUS_PENDING:
+            # Optional: You can choose to return the existing order details directly to save api times
+            return Response({
+            'order_id': order.id,
+            'razorpay_order_id': order.razorpay_order_id,
+            
+            })
+
         try:
             razorpay_order = get_razorpay_client().order.create({
-                'amount': int(total * 100),  # Razorpay expects paise, not rupees
+                'amount': int(total * 100),  # Razorpay expects paise
                 'currency': 'INR',
                 'payment_capture': 1,
                 'notes': {'order_id': str(order.id)},
             })
         except Exception as e:
             return Response({'detail': f'Could not initiate payment: {e}'}, status=status.HTTP_502_BAD_GATEWAY)
- 
-        # Overwriting here is what makes retries work: a customer whose first
-        # payment attempt failed or expired can call this again for a fresh attempt.
+
         order.razorpay_order_id = razorpay_order['id']
         order.save()
- 
+
         return Response({
             'order_id': order.id,
             'razorpay_order_id': order.razorpay_order_id,
-            'razorpay_key_id': settings.RAZORPAY_KEY_ID,  # safe to expose, it's the publishable key
+            'razorpay_key_id': settings.RAZORPAY_KEY_ID,
             'amount': razorpay_order['amount'],
             'currency': razorpay_order['currency'],
         })
- 
-    @action(detail=True, methods=['POST'], url_path='verify-payment')
+
+    @action(detail=True, methods=['POST'], url_path='verify-payment', permission_classes=[IsAuthenticated])
     def verify_payment(self, request, pk=None):
-        order = self.get_object()  # 404s automatically if this order isn't the requesting user's
+        order = self.get_object()
 
-        razorpay_order_id = request.data.get('razorpay_order_id')
-        razorpay_payment_id = request.data.get('razorpay_payment_id')
-        razorpay_signature = request.data.get('razorpay_signature')
+        serializer = RazorpayVerificationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
 
-        if not all([razorpay_order_id, razorpay_payment_id, razorpay_signature]):
-            return Response(
-                {'detail': 'razorpay_order_id, razorpay_payment_id and razorpay_signature are all required.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # CRITICAL SECURITY CHECK: Ensure client's order ID matches the database token securely
+        if data['razorpay_order_id'] != order.razorpay_order_id:
+            return Response({'detail': 'Invalid payment session details.'}, status=status.HTTP_400_BAD_REQUEST)
+            
 
         try:
             get_razorpay_client().utility.verify_payment_signature({
-                'razorpay_order_id': razorpay_order_id,
-                'razorpay_payment_id': razorpay_payment_id,
-                'razorpay_signature': razorpay_signature,
+                'razorpay_order_id': order.razorpay_order_id, 
+                'razorpay_payment_id': data['razorpay_payment_id'],
+                'razorpay_signature': data['razorpay_signature'],
             })
         except razorpay.errors.SignatureVerificationError:
             order.payment_status = Order.PAYMENT_STATUS_FAILED
@@ -243,7 +257,21 @@ class OrderViewSet(ModelViewSet):
             return Response({'detail': 'Payment verification failed.'}, status=status.HTTP_400_BAD_REQUEST)
 
         order.payment_status = Order.PAYMENT_STATUS_COMPLETE
-        order.razorpay_payment_id = razorpay_payment_id
+        order.razorpay_payment_id = data['razorpay_payment_id']
         order.save()
-        return Response(OrderSerializer(order).data)
         
+        return Response(OrderSerializer(order).data)
+
+
+
+
+
+
+
+
+
+
+
+
+
+

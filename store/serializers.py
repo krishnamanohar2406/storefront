@@ -91,6 +91,15 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = ['id', 'customer', 'created_at', 'payment_status', 'delivered', 'delivered_at', 'razorpay_order_id', 'razorpay_payment_id', 'items']
         read_only_fields=['customer','delivered_at','razorpay_order_id','razorpay_payment_id']
 
+class EmptySerializer(serializers.Serializer): 
+    pass
+
+# Create your verification structure data validator 
+class RazorpayVerificationSerializer(serializers.Serializer):
+    razorpay_order_id = serializers.CharField(required=True)
+    razorpay_payment_id = serializers.CharField(required=True)
+    razorpay_signature = serializers.CharField(required=True)
+
 
 class UpdateOrderSerializer(serializers.ModelSerializer):
     class Meta:
