@@ -1,0 +1,124 @@
+.cart-page {
+  padding: var(--space-6) 0 var(--space-8);
+}
+
+.cart-page h1 {
+  font-size: 2rem;
+  margin-bottom: var(--space-6);
+}
+
+.cart-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.cart-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.cart-item {
+  display: grid;
+  grid-template-columns: 64px 1fr auto auto auto;
+  align-items: center;
+  gap: var(--space-4);
+  background: var(--white);
+  border: 1px solid var(--sand-line);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.cart-item-thumb {
+  width: 64px;
+  height: 80px;
+  border-radius: var(--radius-sm);
+  background: var(--sand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  color: var(--ink-soft);
+}
+
+.cart-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.cart-item-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.cart-item-total {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cart-item-remove {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.cart-item-remove:hover {
+  color: var(--danger);
+}
+
+.cart-summary {
+  background: var(--white);
+  border: 1px solid var(--sand-line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  position: sticky;
+  top: 100px;
+}
+
+.cart-summary h3 {
+  font-size: 1.1rem;
+  margin-bottom: var(--space-2);
+}
+
+.cart-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.cart-summary-total {
+  font-weight: 700;
+  color: var(--ink);
+  font-size: 1.05rem;
+  border-top: 1px solid var(--sand-line);
+  padding-top: var(--space-3);
+  margin-top: var(--space-1);
+}
+
+@media (max-width: 800px) {
+  .cart-layout {
+    grid-template-columns: 1fr;
+  }
+  .cart-item {
+    grid-template-columns: 56px 1fr;
+    grid-template-areas:
+      'thumb info'
+      'thumb qty'
+      'thumb total';
+  }
+}

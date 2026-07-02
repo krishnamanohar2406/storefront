@@ -1,0 +1,80 @@
+.hero {
+  background: linear-gradient(135deg, var(--ink) 0%, var(--berry-deep) 120%);
+  color: var(--paper);
+  padding: var(--space-8) 0;
+}
+
+.hero-inner {
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.hero .eyebrow {
+  color: var(--gold);
+}
+
+.hero h1 {
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  line-height: 1.05;
+  color: var(--paper);
+}
+
+.hero h1 em {
+  font-style: italic;
+  color: var(--gold);
+}
+
+.hero-sub {
+  font-size: 1.05rem;
+  color: var(--paper-deep);
+  opacity: 0.85;
+  max-width: 480px;
+}
+
+.hero-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.hero-outline {
+  border-color: var(--paper);
+  color: var(--paper);
+}
+
+.hero-outline:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.category-strip {
+  padding: var(--space-7) 0 var(--space-6);
+}
+
+.category-row {
+  display: flex;
+  gap: var(--space-4);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+}
+
+.category-pill {
+  flex: 0 0 auto;
+  width: 160px;
+  height: 110px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: flex-end;
+  padding: var(--space-3);
+  color: var(--white);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  text-transform: capitalize;
+  box-shadow: var(--shadow-sm);
+}
+
+.featured-section {
+  padding-bottom: var(--space-8);
+}

@@ -1,0 +1,79 @@
+.account-page {
+  padding: var(--space-6) 0 var(--space-8);
+}
+
+.account-page h1 {
+  font-size: 2rem;
+  margin-bottom: var(--space-6);
+}
+
+.account-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.account-section {
+  background: var(--white);
+  border: 1px solid var(--sand-line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+
+.account-section h3 {
+  font-size: 1.05rem;
+  margin-bottom: var(--space-2);
+}
+
+.account-meta {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-bottom: var(--space-4);
+}
+
+.membership-pill {
+  background: var(--berry-tint);
+  color: var(--berry-deep);
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+}
+
+.save-confirm {
+  margin-left: var(--space-3);
+  color: var(--success);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.account-address-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.account-address-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 0.88rem;
+  border-bottom: 1px solid var(--sand-line);
+  padding-bottom: var(--space-3);
+}
+
+.account-address-list li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+@media (max-width: 760px) {
+  .account-layout {
+    grid-template-columns: 1fr;
+  }
+}
