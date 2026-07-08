@@ -30,8 +30,11 @@ SECRET_KEY = "django-insecure-lt(h7dh0qut7nn*l*3utgm$2!pughg+vv)!y765xye$fydnit1
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = []
 
+# backend/storefront/settings.py
+
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend']
 
 
 # Application definition
@@ -58,6 +61,7 @@ INTERNAL_IPS=[
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -69,9 +73,10 @@ MIDDLEWARE = [
 ]
 
 # React (Vite) dev server origins allowed to call this API
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    "http://localhost",
+    "http://127.0.0.1",
 ]
 
 ROOT_URLCONF = "storefront.urls"
@@ -97,16 +102,28 @@ WSGI_APPLICATION = "storefront.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'store',
+#         'USER': 'root',
+#         'PASSWORD': 'mysql123',
+#         'HOST': 'mysql', #'HOST': 'localhost'
+#         'PORT': '3306'
+#     }
+# }
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'store',
-        'USER': 'root',
-        'PASSWORD': 'mysql123',
-        'HOST': 'localhost',
-        'PORT': '3306'
+        'NAME': 'storefront_db',
+        'USER': 'db_user',
+        'PASSWORD': 'db_password',
+        'HOST': 'mysql',  # Points to the container name
+        'PORT': '3306',   # Keep this 3306! Containers communicate on the internal port.
     }
 }
+
 
 
 # Password validation
@@ -143,7 +160,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # <-- Add this line
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR ,'media')

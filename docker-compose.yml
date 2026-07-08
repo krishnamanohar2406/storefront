@@ -1,16 +1,12 @@
-# docker-compose.yml
-
-version: '3.8'
-
 services:
   backend:
-    build: ./storefront
+    build: ./backend
     container_name: django_backend
     restart: always
     ports:
       - "8000:8000"
     env_file:
-      - ./storefront/.env
+      - ./backend/.env
     depends_on:
       mysql:
         condition: service_healthy
@@ -34,10 +30,11 @@ services:
       MYSQL_PASSWORD: db_password
       MYSQL_ROOT_PASSWORD: root_password
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-    # A healthcheck ensures Django doesn't try to connect before MySQL is ready
+      # Automatically runs seed scripts on first boot
+      - ./init-scripts:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s

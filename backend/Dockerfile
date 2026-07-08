@@ -1,29 +1,30 @@
-# storefront/Dockerfile
-
 # Use Python 3.11 as the base image
 FROM python:3.11-slim
 
-# Set environment variables for optimized Python execution
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Set the working directory
 WORKDIR /app
 
-# Install system dependencies required for MySQL client (if using mysqlclient)
+# Install system dependencies required for mysqlclient
 RUN apt-get update \
-    && apt-get install -y default-libmysqlclient-dev build-essential \
+    && apt-get install -y --no-install-recommends \
+       pkg-config \
+       default-libmysqlclient-dev \
+       build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy and install Python dependencies
+# Install Python dependencies
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the Django project code
 COPY . /app/
 
-# Expose the application port
+# Collect static files for WhiteNoise
+RUN python manage.py collectstatic --noinput
+
 EXPOSE 8000
 
-# Run Gunicorn with a sensible default of 3 workers
+# Run Gunicorn
 CMD ["gunicorn", "storefront.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
