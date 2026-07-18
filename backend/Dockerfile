@@ -24,7 +24,9 @@ COPY . /app/
 # Collect static files for WhiteNoise
 RUN python manage.py collectstatic --noinput
 
+RUN chmod +x entrypoint.sh
+
 EXPOSE 8000
 
-# Run Gunicorn
-CMD ["gunicorn", "storefront.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+# Run migrations, then Gunicorn
+CMD ["./entrypoint.sh"]

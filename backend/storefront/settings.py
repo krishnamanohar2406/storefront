@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+import dj_database_url
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
@@ -25,16 +26,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-lt(h7dh0qut7nn*l*3utgm$2!pughg+vv)!y765xye$fydnit1"
+# In production, set SECRET_KEY as an environment variable on your host (Render).
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY",
+    "django-insecure-lt(h7dh0qut7nn*l*3utgm$2!pughg+vv)!y765xye$fydnit1",
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Defaults to False so we never accidentally deploy with DEBUG on.
+# Set DEBUG=True in your local .env for local development.
+DEBUG = os.environ.get("DEBUG", "False") == "True"
 
-# ALLOWED_HOSTS = []
-
-# backend/storefront/settings.py
-
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend']
+# Comma-separated list of hosts, e.g. "myapp.onrender.com,localhost"
+ALLOWED_HOSTS = os.environ.get(
+    "ALLOWED_HOSTS", "localhost,127.0.0.1,backend"
+).split(",")
 
 
 # Application definition
@@ -46,7 +52,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "debug_toolbar",
     'django_filters',
     'corsheaders',
     'rest_framework',
@@ -69,14 +74,23 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
-# React (Vite) dev server origins allowed to call this API
+# debug_toolbar is dev-only: it leaks internals and must never run in production.
+if DEBUG:
+    INSTALLED_APPS.append("debug_toolbar")
+    MIDDLEWARE.append("debug_toolbar.middleware.DebugToolbarMiddleware")
+
+# Comma-separated list of frontend origins allowed to call this API, e.g.
+# "https://myapp.vercel.app,http://localhost:5173"
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost",
-    "http://127.0.0.1",
+CORS_ALLOWED_ORIGINS = os.environ.get(
+    "CORS_ALLOWED_ORIGINS", "http://localhost,http://127.0.0.1"
+).split(",")
+
+# Needed for the Django admin (session/CSRF based) to work behind HTTPS on Render.
+CSRF_TRUSTED_ORIGINS = [
+    o for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o
 ]
 
 ROOT_URLCONF = "storefront.urls"
@@ -101,28 +115,31 @@ WSGI_APPLICATION = "storefront.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+#
+# In production (Render), set the DATABASE_URL environment variable and it will
+# be used automatically (Render's free Postgres instance provides this for you).
+# Locally with docker-compose, DATABASE_URL is unset, so it falls back to the
+# MySQL container defined in docker-compose.yml.
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'store',
-#         'USER': 'root',
-#         'PASSWORD': 'mysql123',
-#         'HOST': 'mysql', #'HOST': 'localhost'
-#         'PORT': '3306'
-#     }
-# }
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'storefront_db',
-        'USER': 'db_user',
-        'PASSWORD': 'db_password',
-        'HOST': 'mysql',  # Points to the container name
-        'PORT': '3306',   # Keep this 3306! Containers communicate on the internal port.
+if os.environ.get("DATABASE_URL"):
+    DATABASES = {
+        "default": dj_database_url.config(
+            env="DATABASE_URL",
+            conn_max_age=600,
+            ssl_require=True,
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'storefront_db',
+            'USER': 'db_user',
+            'PASSWORD': 'db_password',
+            'HOST': 'mysql',  # Points to the container name
+            'PORT': '3306',   # Keep this 3306! Containers communicate on the internal port.
+        }
+    }
 
 
 
