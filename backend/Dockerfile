@@ -24,7 +24,8 @@ COPY . /app/
 # Collect static files for WhiteNoise
 RUN python manage.py collectstatic --noinput
 
-RUN chmod +x entrypoint.sh
+# Strip Windows CRLF line endings (in case the file was saved with them) and make executable
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 
 EXPOSE 8000
 
