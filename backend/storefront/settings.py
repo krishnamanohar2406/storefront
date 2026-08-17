@@ -77,6 +77,7 @@ CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     "http://localhost",
     "http://127.0.0.1",
+
 ]
 
 ROOT_URLCONF = "storefront.urls"
@@ -113,17 +114,18 @@ WSGI_APPLICATION = "storefront.wsgi.application"
 #     }
 # }
 
+import os
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'storefront_db',
-        'USER': 'db_user',
-        'PASSWORD': 'db_password',
-        'HOST': 'mysql',  # Points to the container name
-        'PORT': '3306',   # Keep this 3306! Containers communicate on the internal port.
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST'),
+        'PORT': os.environ.get('DB_PORT'),
     }
 }
-
 
 
 # Password validation

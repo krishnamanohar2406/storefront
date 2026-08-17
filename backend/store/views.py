@@ -64,7 +64,7 @@ class AddressViewSet(ModelViewSet):
 
 
 class ProductViewSet(ModelViewSet):
-    queryset=Product.objects.select_related('collection').all()
+    queryset=Product.objects.all()
     serializer_class=ProductSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ProductFilter
@@ -137,7 +137,7 @@ class CartViewSet(ModelViewSet):
             return Cart.objects.all()
         
         
-        return Cart.objects.filter(customer__user_id=self.request.user.id).prefetch_related('items__product').all()
+        return Cart.objects.filter(customer__user_id=self.request.user.id).all()
     
     def get_serializer_context(self):
         cxt= super().get_serializer_context()
@@ -211,7 +211,7 @@ class OrderViewSet(ModelViewSet):
             return Response({'detail': 'This order has already been paid for.'}, status=status.HTTP_400_BAD_REQUEST)
 
         total = sum(
-            (item.quantity * item.product.unit_price for item in order.items.select_related('product').all()),
+            (item.quantity * item.product.unit_price for item in order.items.all()),
             Decimal('0.00')
         )
         if total <= 0:
