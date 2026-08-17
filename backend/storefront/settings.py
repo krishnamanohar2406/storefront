@@ -34,9 +34,9 @@ DEBUG = True
 
 # backend/storefront/settings.py
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend', 'storefront-1-ylne.onrender.com']
 
-
+CSRF_TRUSTED_ORIGINS = ['https://storefront-1-ylne.onrender.com']
 # Application definition
 
 INSTALLED_APPS = [
@@ -77,9 +77,9 @@ CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     "http://localhost",
     "http://127.0.0.1",
-
+    "https://storefront-1-ylne.onrender.com",
+    "https://storefront-gamma-bice.vercel.app"  # Your frontend URL is now added here
 ]
-
 ROOT_URLCONF = "storefront.urls"
 
 TEMPLATES = [
